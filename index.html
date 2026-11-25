@@ -3,39 +3,89 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>견적 계산기</title>
+<title>작업실</title>
 <style>
   * { box-sizing: border-box; }
   body { margin: 0; font-family: -apple-system, "Noto Sans KR", sans-serif; background: #f5f5f5; color: #222; }
-  section { max-width: 640px; margin: 0 auto; padding: 24px 16px; }
+  header.top { max-width: 960px; margin: 0 auto; padding: 32px 16px 0; }
+  header.top h1 { margin: 0; font-size: 1.6rem; }
+  section { max-width: 960px; margin: 0 auto; padding: 24px 16px; }
   h2 { margin: 0 0 16px; font-size: 1.25rem; }
   .panel { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+  .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+
+  /* ===== 대표작 ===== */
+  .fcard { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+  .fcard-media { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; }
+  .fcard-media button, .fcard-media iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; padding: 0; }
+  .fcard-media button { cursor: pointer; background: #000; }
+  .fcard-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .fcard-play { position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%; background: rgba(0,0,0,.65); }
+  .fcard-play::after { content: ""; position: absolute; left: 22px; top: 16px; border-left: 18px solid #fff; border-top: 12px solid transparent; border-bottom: 12px solid transparent; }
+  .fcard-media button:hover .fcard-play, .fcard-media button:focus-visible .fcard-play { background: rgba(0,0,0,.85); }
+  .fcard-empty { display: flex; align-items: center; justify-content: center; color: #999; background: #e8e8e8; }
+  .fcard-body { padding: 12px 14px 16px; }
+  .fcard-title { margin: 0 0 4px; font-size: 1rem; font-weight: 700; }
+  .fcard-desc { margin: 0; font-size: .9rem; color: #555; line-height: 1.45; }
+
+  /* ===== 작업 노트 ===== */
+  .ncard { display: block; background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.08); color: inherit; text-decoration: none; }
+  a.ncard:hover, a.ncard:focus-visible { box-shadow: 0 4px 14px rgba(0,0,0,.16); }
+  .ncard.empty { opacity: .65; }
+  .ncard-ep { display: inline-block; font-size: .8rem; font-weight: 700; color: #1d4ed8; background: #e8efff; border-radius: 999px; padding: 3px 10px; margin-bottom: 8px; }
+  .ncard-desc { margin: 0 0 10px; line-height: 1.45; }
+  .ncard-link { font-size: .85rem; color: #1d4ed8; }
+
+  /* ===== 연결 줄 ===== */
+  .links { display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 14px 0; border-top: 1px solid #ddd; border-bottom: 1px solid #ddd; }
+  .links a { color: #1d4ed8; text-decoration: none; font-weight: 600; }
+  .links a:hover { text-decoration: underline; }
+  .links span { color: #999; }
+
+  /* ===== 견적 계산기 ===== */
   fieldset { border: 0; padding: 0; margin: 0 0 20px; }
   legend { font-weight: 700; margin-bottom: 8px; padding: 0; }
   .opt { display: flex; align-items: center; gap: 10px; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 8px; cursor: pointer; }
   .opt input { width: 20px; height: 20px; flex: none; }
   .opt .name { flex: 1; }
   .opt .price { color: #555; white-space: nowrap; }
-  select, textarea, input[type=text] { width: 100%; padding: 12px; font: inherit; border: 1px solid #ccc; border-radius: 8px; background: #fff; }
+  select, textarea { width: 100%; padding: 12px; font: inherit; border: 1px solid #ccc; border-radius: 8px; background: #fff; }
   .hint { font-size: .85rem; color: #777; margin: 6px 0 0; }
   .result { border-top: 1px solid #eee; padding-top: 16px; text-align: right; }
   .krw { font-size: 2rem; font-weight: 800; }
-  .sub { font-size: .9rem; color: #555; margin-top: 4px; }
-  .rate-date { font-size: .75rem; color: #888; margin-top: 6px; }
-  .rate-fail { font-size: .85rem; color: #b45309; margin-top: 6px; }
   .breakdown { font-size: .85rem; color: #777; margin-top: 8px; }
   button.cta { width: 100%; margin-top: 16px; padding: 14px; font: inherit; font-weight: 700; color: #fff; background: #1d4ed8; border: 0; border-radius: 8px; cursor: pointer; }
   button.cta:disabled { background: #9ca3af; cursor: not-allowed; }
 
-  /* 아래 #inquiry 는 샘플입니다. 실제 사이트에서는 기존 08 문의 폼을 쓰세요. */
-  #inquiry label { display: block; font-weight: 700; margin: 12px 0 6px; }
+  /* ===== 08 문의 ===== */
+  #inquiry label { display: block; font-weight: 700; margin: 0 0 6px; }
   #inquiry textarea { min-height: 160px; }
+  .narrow { max-width: 640px; }
 </style>
 </head>
 <body>
 
-<!-- ===== 견적 계산기 시작 ===== -->
-<section id="estimate">
+<header class="top"><h1>작업실</h1></header>
+
+<!-- ===== 대표작 ===== -->
+<section id="featured">
+  <h2>대표작</h2>
+  <div class="grid" id="featuredGrid"></div>
+</section>
+
+<!-- ===== 작업 노트 ===== -->
+<section id="notes">
+  <h2>작업 노트</h2>
+  <div class="grid" id="notesGrid"></div>
+</section>
+
+<!-- ===== 연결 줄 ===== -->
+<section id="connect">
+  <div class="links" id="linksRow"></div>
+</section>
+
+<!-- ===== 견적 계산기 ===== -->
+<section id="estimate" class="narrow">
   <h2>견적 계산기</h2>
   <div class="panel">
     <fieldset>
@@ -44,7 +94,6 @@
       <label class="opt"><input type="checkbox" name="job" value="자막 제작" data-price="80000"><span class="name">자막 제작</span><span class="price">80,000원</span></label>
       <label class="opt"><input type="checkbox" name="job" value="대본 기획" data-price="100000"><span class="name">대본 기획</span><span class="price">100,000원</span></label>
     </fieldset>
-
     <fieldset>
       <legend><label for="revisions">추가 수정 횟수</label></legend>
       <select id="revisions">
@@ -55,22 +104,16 @@
       </select>
       <p class="hint">수정 1회당 선택한 작업 합계의 10%가 더해집니다.</p>
     </fieldset>
-
     <div class="result" aria-live="polite">
       <div class="krw" id="krw">0원</div>
-      <div class="sub" id="foreign"></div>
-      <div class="rate-date" id="rateDate"></div>
-      <div class="rate-fail" id="rateFail" hidden>환율을 불러오지 못했어요</div>
       <div class="breakdown" id="breakdown"></div>
     </div>
-
     <button type="button" class="cta" id="inquiryBtn" disabled>이 견적으로 문의하기</button>
   </div>
 </section>
-<!-- ===== 견적 계산기 끝 ===== -->
 
-<!-- 샘플 문의 폼: 실제 08 문의 폼의 id 에 맞게 아래 스크립트의 INQUIRY_SECTION_ID / INQUIRY_MESSAGE_ID 를 바꾸세요. -->
-<section id="inquiry">
+<!-- ===== 08 문의 (샘플 폼: 실제 문의 폼이 있으면 id를 맞추세요) ===== -->
+<section id="inquiry" class="narrow">
   <h2>08 문의</h2>
   <div class="panel">
     <label for="inquiryMessage">문의 내용</label>
@@ -79,95 +122,135 @@
 </section>
 
 <script>
+/* ============================================================
+   ▼ 여기만 고치면 됩니다 (주소·제목·설명을 채우세요)
+   ============================================================ */
+
+// 대표작: 유튜브 주소(watch, youtu.be, shorts 모두 가능)
+var FEATURED = [
+  { url: "", title: "준비중", desc: "준비중" },
+  { url: "", title: "준비중", desc: "준비중" }
+];
+
+// 작업 노트: 회차 / 한 줄 설명 / 링크(https://로 시작). 링크가 비어 있으면 "준비중" 카드로 보입니다.
+var NOTES = [
+  { ep: "1회차", desc: "준비중", url: "" },
+  { ep: "2회차", desc: "준비중", url: "" }
+];
+
+// 연결 줄: 글자 / 링크
+var LINKS = [
+  { label: "준비중", url: "" }
+];
+
+// 문의 폼 연결용 id (실제 문의 폼을 쓸 때만 변경)
+var INQUIRY_SECTION_ID = "inquiry";
+var INQUIRY_MESSAGE_ID = "inquiryMessage";
+/* ============================================================ */
+
 (function () {
-  // ▼ 실제 문의 폼에 맞게 수정하는 값
-  var INQUIRY_SECTION_ID = "inquiry";
-  var INQUIRY_MESSAGE_ID = "inquiryMessage";
-
-  var RATE_URL = "https://api.frankfurter.dev/v2/rates?base=KRW&quotes=USD,JPY";
-  var REVISION_RATE = 0.10;
-
-  var rates = null;      // { USD: 0.00074, JPY: 0.118 }
-  var rateDate = "";
-  var rateFailed = false;
-
   var $ = function (id) { return document.getElementById(id); };
+  function safeUrl(u) { return /^https?:\/\//i.test(String(u || "").trim()) ? String(u).trim() : ""; }
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+
+  /* ---------- 대표작 ---------- */
+  function getYouTubeId(url) {
+    var m = String(url).match(/(?:youtu\.be\/|v=|\/shorts\/|\/embed\/)([A-Za-z0-9_-]{11})/);
+    return m ? m[1] : null;
+  }
+  FEATURED.forEach(function (item) {
+    var id = getYouTubeId(item.url);
+    var card = el("article", "fcard");
+    var media = el("div", "fcard-media");
+    if (id) {
+      var btn = el("button");
+      btn.type = "button";
+      btn.setAttribute("aria-label", item.title + " 재생");
+      var img = el("img");
+      img.src = "https://i.ytimg.com/vi/" + id + "/hqdefault.jpg";
+      img.alt = item.title;
+      img.loading = "lazy";
+      btn.append(img, el("span", "fcard-play"));
+      btn.addEventListener("click", function () {
+        var f = el("iframe");
+        f.src = "https://www.youtube-nocookie.com/embed/" + id + "?autoplay=1&rel=0";
+        f.title = item.title;
+        f.allow = "accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen";
+        f.allowFullscreen = true;
+        media.replaceChildren(f);
+      });
+      media.appendChild(btn);
+    } else {
+      media.classList.add("fcard-empty");
+      media.textContent = "영상 준비중";
+    }
+    var body = el("div", "fcard-body");
+    body.append(el("h3", "fcard-title", item.title), el("p", "fcard-desc", item.desc));
+    card.append(media, body);
+    $("featuredGrid").appendChild(card);
+  });
+
+  /* ---------- 작업 노트 ---------- */
+  NOTES.forEach(function (n) {
+    var url = safeUrl(n.url);
+    var card = el(url ? "a" : "div", "ncard" + (url ? "" : " empty"));
+    if (url) { card.href = url; card.target = "_blank"; card.rel = "noopener noreferrer"; }
+    card.append(el("span", "ncard-ep", n.ep), el("p", "ncard-desc", n.desc),
+      el("span", "ncard-link", url ? "열기 →" : "링크 준비중"));
+    $("notesGrid").appendChild(card);
+  });
+
+  /* ---------- 연결 줄 ---------- */
+  LINKS.forEach(function (l) {
+    var url = safeUrl(l.url);
+    if (url) {
+      var a = el("a", null, l.label);
+      a.href = url; a.target = "_blank"; a.rel = "noopener noreferrer";
+      $("linksRow").appendChild(a);
+    } else {
+      $("linksRow").appendChild(el("span", null, l.label));
+    }
+  });
+
+  /* ---------- 견적 계산기 ---------- */
+  var REVISION_RATE = 0.10;
   var checks = document.querySelectorAll('input[name="job"]');
   var revisions = $("revisions");
-  var btn = $("inquiryBtn");
-
-  var fmtKRW = new Intl.NumberFormat("ko-KR");
-  var fmtUSD = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
-  var fmtJPY = new Intl.NumberFormat("ja-JP", { style: "currency", currency: "JPY", maximumFractionDigits: 0 });
+  var cta = $("inquiryBtn");
+  var fmt = new Intl.NumberFormat("ko-KR");
 
   function state() {
     var jobs = [], base = 0;
-    checks.forEach(function (c) {
-      if (c.checked) { jobs.push(c.value); base += Number(c.dataset.price); }
-    });
+    checks.forEach(function (c) { if (c.checked) { jobs.push(c.value); base += Number(c.dataset.price); } });
     var n = Number(revisions.value);
     var extra = Math.round(base * REVISION_RATE * n);
     return { jobs: jobs, base: base, n: n, extra: extra, total: base + extra };
   }
-
   function render() {
     var s = state();
-    $("krw").textContent = fmtKRW.format(s.total) + "원";
+    $("krw").textContent = fmt.format(s.total) + "원";
     $("breakdown").textContent = s.base
-      ? "작업 " + fmtKRW.format(s.base) + "원" + (s.n ? " + 수정 " + s.n + "회 " + fmtKRW.format(s.extra) + "원" : "")
-      : "";
-    btn.disabled = s.jobs.length === 0;
-
-    if (rates) {
-      $("foreign").textContent = "≈ " + fmtUSD.format(s.total * rates.USD) + " · " + fmtJPY.format(s.total * rates.JPY);
-      $("rateDate").textContent = "환율 기준 " + rateDate;
-    }
-    $("rateFail").hidden = !rateFailed;
+      ? "작업 " + fmt.format(s.base) + "원" + (s.n ? " + 수정 " + s.n + "회 " + fmt.format(s.extra) + "원" : "") : "";
+    cta.disabled = s.jobs.length === 0;
   }
-
-  function loadRates() {
-    var ctrl = new AbortController();
-    var timer = setTimeout(function () { ctrl.abort(); }, 8000);
-    fetch(RATE_URL, { signal: ctrl.signal })
-      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
-      .then(function (list) {
-        var out = {};
-        list.forEach(function (x) { out[x.quote] = x.rate; rateDate = x.date; });
-        if (!(out.USD > 0) || !(out.JPY > 0)) throw new Error("no rate");
-        rates = out;
-      })
-      .catch(function () { rates = null; rateFailed = true; })
-      .then(function () { clearTimeout(timer); render(); });
-  }
-
   function buildMessage() {
     var s = state();
-    var lines = [
-      "[견적 문의]",
-      "작업: " + s.jobs.join(", "),
-      "수정 횟수: " + s.n + "회",
-      "예상 합계: " + fmtKRW.format(s.total) + "원"
-    ];
-    if (rates) lines.push("(환율 기준 " + rateDate + ": " + fmtUSD.format(s.total * rates.USD) + " / " + fmtJPY.format(s.total * rates.JPY) + ")");
-    return lines.join("\n");
+    return ["[견적 문의]", "작업: " + s.jobs.join(", "), "수정 횟수: " + s.n + "회", "예상 합계: " + fmt.format(s.total) + "원"].join("\n");
   }
-
-  btn.addEventListener("click", function () {
-    var section = $(INQUIRY_SECTION_ID);
-    var field = $(INQUIRY_MESSAGE_ID);
-    if (field) {
-      field.value = buildMessage();
-      field.dispatchEvent(new Event("input", { bubbles: true }));
-    }
+  cta.addEventListener("click", function () {
+    var section = $(INQUIRY_SECTION_ID), field = $(INQUIRY_MESSAGE_ID);
+    if (field) { field.value = buildMessage(); field.dispatchEvent(new Event("input", { bubbles: true })); }
     if (section) section.scrollIntoView({ behavior: "smooth", block: "start" });
     if (field) setTimeout(function () { field.focus({ preventScroll: true }); }, 400);
   });
-
   checks.forEach(function (c) { c.addEventListener("change", render); });
   revisions.addEventListener("change", render);
-
   render();
-  loadRates();
 })();
 </script>
 </body>
