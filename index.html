@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>견적 계산기</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, "Noto Sans KR", sans-serif; background: #f5f5f5; color: #222; }
+  section { max-width: 640px; margin: 0 auto; padding: 24px 16px; }
+  h2 { margin: 0 0 16px; font-size: 1.25rem; }
+  .panel { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+  fieldset { border: 0; padding: 0; margin: 0 0 20px; }
+  legend { font-weight: 700; margin-bottom: 8px; padding: 0; }
+  .opt { display: flex; align-items: center; gap: 10px; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 8px; cursor: pointer; }
+  .opt input { width: 20px; height: 20px; flex: none; }
+  .opt .name { flex: 1; }
+  .opt .price { color: #555; white-space: nowrap; }
+  select, textarea, input[type=text] { width: 100%; padding: 12px; font: inherit; border: 1px solid #ccc; border-radius: 8px; background: #fff; }
+  .hint { font-size: .85rem; color: #777; margin: 6px 0 0; }
+  .result { border-top: 1px solid #eee; padding-top: 16px; text-align: right; }
+  .krw { font-size: 2rem; font-weight: 800; }
+  .sub { font-size: .9rem; color: #555; margin-top: 4px; }
+  .rate-date { font-size: .75rem; color: #888; margin-top: 6px; }
+  .rate-fail { font-size: .85rem; color: #b45309; margin-top: 6px; }
+  .breakdown { font-size: .85rem; color: #777; margin-top: 8px; }
+  button.cta { width: 100%; margin-top: 16px; padding: 14px; font: inherit; font-weight: 700; color: #fff; background: #1d4ed8; border: 0; border-radius: 8px; cursor: pointer; }
+  button.cta:disabled { background: #9ca3af; cursor: not-allowed; }
+
+  /* 아래 #inquiry 는 샘플입니다. 실제 사이트에서는 기존 08 문의 폼을 쓰세요. */
+  #inquiry label { display: block; font-weight: 700; margin: 12px 0 6px; }
+  #inquiry textarea { min-height: 160px; }
+</style>
+</head>
+<body>
+
+<!-- ===== 견적 계산기 시작 ===== -->
+<section id="estimate">
+  <h2>견적 계산기</h2>
+  <div class="panel">
+    <fieldset>
+      <legend>작업 종류 (여러 개 선택)</legend>
+      <label class="opt"><input type="checkbox" name="job" value="숏폼 편집" data-price="150000"><span class="name">숏폼 편집</span><span class="price">150,000원</span></label>
+      <label class="opt"><input type="checkbox" name="job" value="자막 제작" data-price="80000"><span class="name">자막 제작</span><span class="price">80,000원</span></label>
+      <label class="opt"><input type="checkbox" name="job" value="대본 기획" data-price="100000"><span class="name">대본 기획</span><span class="price">100,000원</span></label>
+    </fieldset>
+
+    <fieldset>
+      <legend><label for="revisions">추가 수정 횟수</label></legend>
+      <select id="revisions">
+        <option value="0">0회</option>
+        <option value="1">1회 (+10%)</option>
+        <option value="2">2회 (+20%)</option>
+        <option value="3">3회 (+30%)</option>
+      </select>
+      <p class="hint">수정 1회당 선택한 작업 합계의 10%가 더해집니다.</p>
+    </fieldset>
+
+    <div class="result" aria-live="polite">
+      <div class="krw" id="krw">0원</div>
+      <div class="sub" id="foreign"></div>
+      <div class="rate-date" id="rateDate"></div>
+      <div class="rate-fail" id="rateFail" hidden>환율을 불러오지 못했어요</div>
+      <div class="breakdown" id="breakdown"></div>
+    </div>
+
+    <button type="button" class="cta" id="inquiryBtn" disabled>이 견적으로 문의하기</button>
+  </div>
+</section>
+<!-- ===== 견적 계산기 끝 ===== -->
+
+<!-- 샘플 문의 폼: 실제 08 문의 폼의 id 에 맞게 아래 스크립트의 INQUIRY_SECTION_ID / INQUIRY_MESSAGE_ID 를 바꾸세요. -->
+<section id="inquiry">
+  <h2>08 문의</h2>
+  <div class="panel">
+    <label for="inquiryMessage">문의 내용</label>
+    <textarea id="inquiryMessage" placeholder="문의 내용을 적어 주세요."></textarea>
+  </div>
+</section>
+
+<script>
+(function () {
+  // ▼ 실제 문의 폼에 맞게 수정하는 값
+  var INQUIRY_SECTION_ID = "inquiry";
+  var INQUIRY_MESSAGE_ID = "inquiryMessage";
+
+  var RATE_URL = "https://api.frankfurter.dev/v2/rates?base=KRW&quotes=USD,JPY";
+  var REVISION_RATE = 0.10;
+
+  var rates = null;      // { USD: 0.00074, JPY: 0.118 }
+  var rateDate = "";
+  var rateFailed = false;
+
+  var $ = function (id) { return document.getElementById(id); };
+  var checks = document.querySelectorAll('input[name="job"]');
+  var revisions = $("revisions");
+  var btn = $("inquiryBtn");
+
+  var fmtKRW = new Intl.NumberFormat("ko-KR");
+  var fmtUSD = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
+  var fmtJPY = new Intl.NumberFormat("ja-JP", { style: "currency", currency: "JPY", maximumFractionDigits: 0 });
+
+  function state() {
+    var jobs = [], base = 0;
+    checks.forEach(function (c) {
+      if (c.checked) { jobs.push(c.value); base += Number(c.dataset.price); }
+    });
+    var n = Number(revisions.value);
+    var extra = Math.round(base * REVISION_RATE * n);
+    return { jobs: jobs, base: base, n: n, extra: extra, total: base + extra };
+  }
+
+  function render() {
+    var s = state();
+    $("krw").textContent = fmtKRW.format(s.total) + "원";
+    $("breakdown").textContent = s.base
+      ? "작업 " + fmtKRW.format(s.base) + "원" + (s.n ? " + 수정 " + s.n + "회 " + fmtKRW.format(s.extra) + "원" : "")
+      : "";
+    btn.disabled = s.jobs.length === 0;
+
+    if (rates) {
+      $("foreign").textContent = "≈ " + fmtUSD.format(s.total * rates.USD) + " · " + fmtJPY.format(s.total * rates.JPY);
+      $("rateDate").textContent = "환율 기준 " + rateDate;
+    }
+    $("rateFail").hidden = !rateFailed;
+  }
+
+  function loadRates() {
+    var ctrl = new AbortController();
+    var timer = setTimeout(function () { ctrl.abort(); }, 8000);
+    fetch(RATE_URL, { signal: ctrl.signal })
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then(function (list) {
+        var out = {};
+        list.forEach(function (x) { out[x.quote] = x.rate; rateDate = x.date; });
+        if (!(out.USD > 0) || !(out.JPY > 0)) throw new Error("no rate");
+        rates = out;
+      })
+      .catch(function () { rates = null; rateFailed = true; })
+      .then(function () { clearTimeout(timer); render(); });
+  }
+
+  function buildMessage() {
+    var s = state();
+    var lines = [
+      "[견적 문의]",
+      "작업: " + s.jobs.join(", "),
+      "수정 횟수: " + s.n + "회",
+      "예상 합계: " + fmtKRW.format(s.total) + "원"
+    ];
+    if (rates) lines.push("(환율 기준 " + rateDate + ": " + fmtUSD.format(s.total * rates.USD) + " / " + fmtJPY.format(s.total * rates.JPY) + ")");
+    return lines.join("\n");
+  }
+
+  btn.addEventListener("click", function () {
+    var section = $(INQUIRY_SECTION_ID);
+    var field = $(INQUIRY_MESSAGE_ID);
+    if (field) {
+      field.value = buildMessage();
+      field.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+    if (section) section.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (field) setTimeout(function () { field.focus({ preventScroll: true }); }, 400);
+  });
+
+  checks.forEach(function (c) { c.addEventListener("change", render); });
+  revisions.addEventListener("change", render);
+
+  render();
+  loadRates();
+})();
+</script>
+</body>
+</html>
